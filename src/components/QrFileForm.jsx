@@ -5,21 +5,21 @@ import { motion } from "framer-motion";
 import { useContext } from "react";
 import FormGroup from "./FormGroup";
 
-const QrTextForm = ({
+const QrFileForm = ({
   handleCreateQr,
   handleChange,
   foreground,
   background,
   inputData,
-  error
+  error,
+  file,
+  filePreview,
 }) => {
   const { isDarkMode } = useContext(ThemeContext);
-  let paragraphStyle = "";
-  isDarkMode
-    ? (paragraphStyle = "text-gray-200")
-    : (paragraphStyle = "text-gray-600");
+  const paragraphStyle = isDarkMode ? "text-gray-200" : "text-gray-600";
+
   return (
-    // this form will be used for the website, google doc, facebook, youtube and email sections of the webapp
+    // this form will be used for image download and pdf download sections of the webapp
     <form
       action=""
       className={`px-4 py-4 ${
@@ -41,6 +41,31 @@ const QrTextForm = ({
               type={input.type}
             />
           ))}
+        </div>
+
+        <div className=" flex items-center justify-center">
+          {file && (
+            <div className="">
+              <p className={`${paragraphStyle} text-center`}>
+                Selected file: {file.name}
+              </p>
+              {file.type === "application/pdf" ? (
+                <embed
+                  src={filePreview}
+                  type="application/pdf"
+                  width="100%"
+                  height="300px"
+                  className="mx-auto"
+                />
+              ) : (
+                <img
+                  src={filePreview}
+                  alt="Selected Preview"
+                  className="h-60  mx-auto"
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {/* color inputs */}
@@ -77,9 +102,9 @@ const QrTextForm = ({
             />
           </div>
         </div>
-      {error && <p className={paragraphStyle}>{error}</p>}
-        
+        {error && <p className={paragraphStyle}>{error}</p>}
       </div>
+
       <div className="mx-auto">
         <Button type="submit" text="Create Qr" extraStyle="px-12" />
       </div>
@@ -87,4 +112,4 @@ const QrTextForm = ({
   );
 };
 
-export default QrTextForm;
+export default QrFileForm;

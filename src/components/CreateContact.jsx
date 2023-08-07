@@ -3,14 +3,17 @@ import QrTextForm from "./QrTextForm";
 import { motion } from "framer-motion";
 import DownloadQr from "./DownloadQr";
 import { ThemeContext } from "../context/ThemeContext";
-import { addDoc, collection } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { UserContext } from "../context/UserContext";
 import VCard from "vcard-creator";
+import uploadDocFunction from "../myHooks/uploadDocFunction";
 
 const CreateContact = () => {
-  const isDarkMode = useContext(ThemeContext);
-  const user = useContext(UserContext);
+  const { isDarkMode } = useContext(ThemeContext);
+  const [error, setError] = useState("");
+
+  const { user } = useContext(UserContext);
   const [qRData, setQRData] = useState({
     firstName: "",
     lastName: "",
@@ -29,21 +32,24 @@ const CreateContact = () => {
     `${user}`,
     "qr-code-data"
   );
+
   const addToDb = useCallback(async () => {
     setStatus("Saving Qr code");
     const { fileName, foreground, background } = qRData;
     try {
-      const docAdded = await addDoc(collectionRef, {
+      const docToBeAdded = {
         name: fileName,
         value: qRImageData,
-        type: "contact",
+        type: "vCard",
         date: new Date().toDateString(),
         sortDate: Number(new Date()),
         numDownload: "Not applicable",
         foreground: foreground,
         background: background,
-      });
-      if (docAdded) {
+      };
+      const success = await uploadDocFunction(collectionRef, docToBeAdded);
+
+      if (success) {
         setStatus("Qr code saved successfully");
         setQRData({
           firstName: "",
@@ -52,8 +58,8 @@ const CreateContact = () => {
           email: "",
           website: "",
           fileName: "",
-          foreground: "",
-          background: "",
+          foreground: "#000000",
+          background: "#ffffff",
         });
       }
     } catch (error) {
@@ -63,19 +69,36 @@ const CreateContact = () => {
 
   const handleChange = (event) => {
     setQRData({ ...qRData, [event.target.name]: event.target.value });
-    console.log(qRData);
   };
 
   const handleCreateQr = (event) => {
     event.preventDefault();
+    const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    const urlPattern = /^(https?:\/\/)?[\w.-]+\.[a-zA-Z]{2,}(\/\S*)?$/;
+
     if (
-      qRData.firstName !== "" &&
-      qRData.lastName !== "" &&
-      qRData.fileName !== "" &&
-      qRData.email !== "" &&
-      qRData.website !== "" &&
-      qRData.phoneNumber !== ""
+      qRData.firstName === "" ||
+      qRData.lastName === "" ||
+      qRData.fileName === "" ||
+      qRData.email === "" ||
+      qRData.website === "" ||
+      qRData.phoneNumber === ""
     ) {
+      setError("please fill in all fields");
+    } else if (
+      qRData.firstName.trim().includes(" ") ||
+      qRData.lastName.trim().includes(" ")
+    ) {
+      setError("Name fields cannot include spaces");
+    } else if (urlPattern.test(qRData.website.trim()) === false) {
+      setError(
+        "Invalid URL format. URLs should be in the format 'https://example.com'"
+      );
+    } else if (emailPattern.test(qRData.email.trim()) === false) {
+      setError(
+        "Invalid email format. Please enter a valid email address (e.g., example@example.com)."
+      );
+    } else {
       const { firstName, lastName, email, website, phoneNumber } = qRData;
       const vCard = new VCard();
       vCard
@@ -120,7 +143,7 @@ const CreateContact = () => {
       value: qRData.website,
       id: "website",
       placeholder: "Enter email here",
-      type: "url",
+      type: "text",
     },
     {
       label: "Name your Qr Code",
@@ -130,14 +153,22 @@ const CreateContact = () => {
       type: "text",
     },
   ];
+
+  const paragraphStyle = `${isDarkMode ? "text-gray-200" : "text-gray-600"}`;
   return (
     <div>
+      <div className="">
+        <h1 className={`${paragraphStyle} text-3xl text-center mb-6`}>
+          Share Contact Info in a Scan!
+        </h1>
+      </div>
       <QrTextForm
         inputData={inputData}
         handleChange={handleChange}
         handleCreateQr={handleCreateQr}
         foreground={qRData.foreground}
         background={qRData.background}
+        error={error}
       />
       {qRImageData && (
         <motion.div
@@ -152,6 +183,7 @@ const CreateContact = () => {
             background={qRData.background}
             fileName={qRData.fileName}
             onClick={addToDb}
+            showSave
           />
           {status && (
             <p

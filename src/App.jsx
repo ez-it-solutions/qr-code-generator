@@ -16,12 +16,12 @@ import DashboardLayout from "./layout/DashboardLayout";
 import CreateUrl from "./components/CreateUrl";
 import Landing from "./pages/Landing";
 import Protected from "./components/Protected";
-import CreateFile from "./components/CreateFile";
+import CreateFile from "./components/CreatePDF";
 import CreateContact from "./components/CreateContact";
 import CreateEmail from "./components/CreateEmail"
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [user, setUser] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -65,7 +65,7 @@ function App() {
     )
   );
   return (
-    <div className="h-6 w-full bg-blue-600">
+    <div className="h-6 w-full">
       <ThemeContext.Provider value={{ isDarkMode, setIsDarkMode }}>
         <UserContext.Provider value={{ user }}>
           <RouterProvider router={router} />

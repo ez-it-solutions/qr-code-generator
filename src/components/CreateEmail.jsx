@@ -10,6 +10,8 @@ import uploadDocFunction from "../myHooks/uploadDocFunction";
 
 const CreateEmail = () => {
   const { user } = useContext(UserContext);
+  const [error, setError] = useState("");
+
   const { isDarkMode } = useContext(ThemeContext);
   const [qRData, setQRData] = useState({
     email: "",
@@ -63,7 +65,15 @@ const CreateEmail = () => {
 
   const handleCreateQr = (e) => {
     e.preventDefault();
-    if (qRData.email !== "" && qRData.fileName !== "") {
+    const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    if (qRData.email === "" || qRData.fileName === "") {
+      setError("please fill in all fields");
+    } else if (emailPattern.test(qRData.email.trim()) === false) {
+      setError(
+        "Invalid email format. Please enter a valid email address (e.g., example@example.com)."
+      );
+    } else {
+      setError("");
       setQRimageData(qRData);
     }
   };
@@ -73,8 +83,8 @@ const CreateEmail = () => {
       label: "Email",
       value: qRData.value,
       id: "email",
-      placeholder: "Enter a web address here",
-      type: "email",
+      placeholder: "Enter an email address here",
+      type: "text",
     },
     {
       label: "Name your Qr Code",
@@ -85,19 +95,26 @@ const CreateEmail = () => {
     },
   ];
 
+  const paragraphStyle = `${isDarkMode ? "text-gray-200" : "text-gray-600"}`;
+
   return (
     <div
       className={`  px-2 py-4 ${
         isDarkMode ? "" : ""
       } flex flex-col justify-center w-full  lg:max-w-3xl lg:mx-auto  md:items-center `}
     >
+      <div className="">
+        <h1 className={`${paragraphStyle} text-3xl text-center mb-6`}>
+          Instant Email QR Codes: Connect with a Scan!
+        </h1>
+      </div>
       <QrTextForm
         handleCreateQr={handleCreateQr}
-        // fileName={qRData.fileName}
         handleChange={handleChange}
         foreground={qRData.foreground}
         background={qRData.background}
         inputData={inputData}
+        error={error}
       />
 
       {qRImageData && (
@@ -113,6 +130,7 @@ const CreateEmail = () => {
             background={qRImageData.background}
             fileName={qRImageData.fileName}
             onClick={addToDb}
+            showSave
           />
           {status && (
             <p

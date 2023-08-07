@@ -4,44 +4,74 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { UserContext } from "../context/UserContext";
 import { ThemeContext } from "../context/ThemeContext";
 import RecentMobile from "./RecentMobile";
-
 import { useMediaQuery } from "react-responsive";
 import RecentDesktop from "./RecentDesktop";
+import DownloadQr from "./DownloadQr";
+import close from "../images/close.svg";
+
 const CreatedQrs = () => {
+  const [recentQRData, setRecentQRData] = useState([]);
+  const [qRToShow, setQRToShow] = useState(null);
   const [showQRModal, setShowQRModal] = useState(false);
-  const [qrData, setQrData] = useState([]);
+
   const { user } = useContext(UserContext);
   const { isDarkMode } = useContext(ThemeContext);
   const isDesktop = useMediaQuery({ minWidth: 768 });
-  // reference to firestore collection
-  const collectionRef = collection(
-    db,
-    "qr-codes-collection",
-    user,
-    "qr-code-data"
-  );
-  // get data from firestore
+
   useEffect(() => {
+    const collectionRef = collection(
+      db,
+      "qr-codes-collection",
+      user,
+      "qr-code-data"
+    );
     onSnapshot(collectionRef, (snapshot) => {
       const fetchedQrs = snapshot.docs.map((doc) => ({
         ...doc.data(),
         id: doc.id,
       }));
-      setQrData(fetchedQrs);
+      setRecentQRData(fetchedQrs);
     });
-  }, [collectionRef]);
+  }, [user]);
 
-  let paragraphStyle;
-  isDarkMode
-    ? (paragraphStyle = "text-gray-200")
-    : (paragraphStyle = "text-gray-600");
+  const paragraphStyle = `${isDarkMode ? "text-gray-200" : "text-gray-600"}`;
 
   return (
     <div className="mx-6 ">
+      {/* show expanded qr view when view button is clicked*/}
+      {showQRModal && (
+        <div
+          className={`${
+            isDarkMode ? "bg-[#424548]" : "bg-[#fafafa]"
+          } fixed left-0 right-0 bottom-0 top-0 flex flex-col items-center justify-center`}
+        >
+          <div
+            className="w-10 h-10 cursor-pointer absolute bg-gray-400 rounded-full top-10 left-6 flex items-center justify-center"
+            onClick={() => setShowQRModal(false)}
+          >
+            <img src={close} alt="" className="w-6" />
+          </div>
+          <h3
+            className={`${
+              isDarkMode ? "text-white" : "text-gray-600"
+            } text-3xl font-semibold text-center px-6 truncate`}
+          >
+            {recentQRData[qRToShow].name.toUpperCase()}
+          </h3>
+          <div className="">
+            <DownloadQr
+              value={recentQRData[qRToShow].value}
+              foreground={recentQRData[qRToShow].foreground}
+              background={recentQRData[qRToShow].background}
+              fileName={recentQRData[qRToShow].name}
+            />
+          </div>
+        </div>
+      )}
       <h2
         className={`${
           isDarkMode && "text-gray-200"
-        } text-2xl py-4 mb-2 font-semibold text-center lg:text-4xl`}
+        } text-2xl py-4 mb-2 text-center lg:text-2xl`}
       >
         Recently Saved Qr Codes
       </h2>
@@ -58,12 +88,12 @@ const CreatedQrs = () => {
             <p className={`${paragraphStyle} w-1/5`}>Action</p>
           </div>
         )}
-        {qrData
+        {recentQRData
           .sort((b, a) => a.sortDate - b.sortDate)
           .slice(0, 3)
-          .map((data) => (
+          .map((qRData, index) => (
             <div
-              key={data.id}
+              key={qRData.id}
               className={`${
                 isDarkMode
                   ? "border-gray-200 hover:bg-[#424548aa]"
@@ -73,25 +103,20 @@ const CreatedQrs = () => {
               {isDesktop ? (
                 <div className="py-2">
                   <RecentDesktop
-                    name={data.name}
-                    date={data.date}
-                    numDownload={data.numDownload}
-                    id={data.id}
+                    qRData={qRData}
                     paragraphStyle={paragraphStyle}
-                    setShowViewModal={setShowQRModal}
-                    showViewModal={showQRModal}
+                    index={index}
+                    setShowQRModal={setShowQRModal}
+                    setQRToShow={setQRToShow}
                   />
                 </div>
               ) : (
                 <RecentMobile
-                  name={data.name}
-                  date={data.date}
-                  numDownload={data.numDownload}
-                  id={data.id}
+                  qRData={qRData}
                   paragraphStyle={paragraphStyle}
-                  setShowViewModal={setShowQRModal}
-                  showViewModal={showQRModal}
-
+                  index={index}
+                  setShowQRModal={setShowQRModal}
+                  setQRToShow={setQRToShow}
                 />
               )}
             </div>

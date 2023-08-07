@@ -10,6 +10,7 @@ import uploadDocFunction from "../myHooks/uploadDocFunction";
 
 const CreateUrl = () => {
   const { user } = useContext(UserContext);
+  const [error, setError] = useState("");
   const { isDarkMode } = useContext(ThemeContext);
   const [qRData, setQRData] = useState({
     url: "",
@@ -49,31 +50,40 @@ const CreateUrl = () => {
           url: "",
           fileName: "",
           foreground: "#000000",
-          background: "#ffffff", 
+          background: "#ffffff",
         });
       }
     } catch (error) {
       setStatus("failed to save Qr code: Try again");
     }
   }, [qRData, collectionRef]);
+
   const handleChange = (e) => {
     setQRData({ ...qRData, [e.target.name]: e.target.value });
   };
 
   const handleCreateQr = (e) => {
     e.preventDefault();
-    if (qRData.url !== "" && qRData.fileName !== "") {
+    const urlPattern = /^(https?:\/\/)?[\w.-]+\.[a-zA-Z]{2,}(\/\S*)?$/;
+
+    if (qRData.url === "" || qRData.fileName === "") {
+      setError("please fill in all fields");
+    } else if (urlPattern.test(qRData.url.trim()) === false) {
+      setError(
+        "Invalid URL format. URLs should be in the format 'https://example.com'"
+      );
+    } else {
+      setError("");
       setQRimageData(qRData);
     }
   };
-
   const inputData = [
     {
       label: "Address",
       value: qRData.url,
       id: "url",
-      placeholder: "Enter a web address here",
-      type: "url",
+      placeholder: "Should begin with 'https://'",
+      type: "text",
     },
     {
       label: "Name your Qr Code",
@@ -84,12 +94,20 @@ const CreateUrl = () => {
     },
   ];
 
+  const paragraphStyle = `${isDarkMode ? "text-gray-200" : "text-gray-600"}`;
+
   return (
     <div
-      className={`  px-2 py-4 ${
+      className={`  px-2 ${
         isDarkMode ? "" : ""
       } flex flex-col justify-center w-full  lg:max-w-3xl lg:mx-auto  md:items-center `}
     >
+      <div className="">
+        <h1 className={`${paragraphStyle} text-3xl text-center mb-6`}>
+          Share Links with Ease!
+        </h1>
+      </div>
+
       <QrTextForm
         handleCreateQr={handleCreateQr}
         fileName={qRData.fileName}
@@ -97,6 +115,7 @@ const CreateUrl = () => {
         foreground={qRData.foreground}
         background={qRData.background}
         inputData={inputData}
+        error={error}
       />
 
       {qRImageData && (
@@ -112,6 +131,7 @@ const CreateUrl = () => {
             background={qRImageData.background}
             fileName={qRImageData.fileName}
             onClick={addToDb}
+            showSave
           />
           {status && (
             <p
